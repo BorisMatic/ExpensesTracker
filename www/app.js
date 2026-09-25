@@ -67,7 +67,29 @@ function normalize(d) {
 }
 
 function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.error('Greška pri čuvanju podataka', e);
+    toast('Podaci nisu sačuvani na uređaju');
+  }
+}
+
+// Potvrda drugim tapom na isto dugme (bez sistemskog prozora)
+function confirmTap(btn, label = 'Tapni ponovo') {
+  if (btn.dataset.armed) {
+    clearTimeout(Number(btn.dataset.armed));
+    delete btn.dataset.armed;
+    btn.textContent = btn.dataset.label;
+    return true;
+  }
+  btn.dataset.label = btn.textContent;
+  btn.textContent = label;
+  btn.dataset.armed = setTimeout(() => {
+    delete btn.dataset.armed;
+    btn.textContent = btn.dataset.label;
+  }, 3000);
+  return false;
 }
 
 /* ---------- Pomoćne funkcije ---------- */
@@ -378,9 +400,9 @@ $('#expense-form').addEventListener('submit', (ev) => {
   }
 });
 
-$('#f-delete').addEventListener('click', () => {
+$('#f-delete').addEventListener('click', (ev) => {
   const id = $('#f-id').value;
-  if (!id || !confirm('Obrisati ovaj trošak?')) return;
+  if (!id || !confirmTap(ev.target, 'Sigurno obriši?')) return;
   data.expenses = data.expenses.filter((e) => e.id !== id);
   save();
   toast('Trošak obrisan');
@@ -432,7 +454,7 @@ function bindEditList(containerSel, listKey, refField, label) {
     const used = data.expenses.filter((e) => e[refField] === id).length;
     if (data[listKey].length <= 1) return toast(`Mora postojati bar jedna ${label}`);
     if (used) return toast(`Ne može se obrisati – ima ${used} unetih troškova`);
-    if (!confirm('Obrisati?')) return;
+    if (!confirmTap(ev.target, '?')) return;
     data[listKey] = data[listKey].filter((x) => x.id !== id);
     save();
     renderSettings();
@@ -507,11 +529,12 @@ $('#import-file').addEventListener('change', async (ev) => {
   try {
     const parsed = JSON.parse(await file.text());
     if (!parsed || !Array.isArray(parsed.expenses)) throw new Error('Neispravan fajl');
-    if (!confirm(`Uvesti ${parsed.expenses.length} troškova? Trenutni podaci će biti zamenjeni.`)) return;
+    // Pre zamene sačuvaj stare podatke, za svaki slučaj
+    try { localStorage.setItem(STORAGE_KEY + '.pre-uvoz', JSON.stringify(data)); } catch (_) {}
     data = normalize(parsed);
     save();
     render();
-    toast('Podaci uvezeni');
+    toast(`Uvezeno ${data.expenses.length} troškova`);
   } catch (e) {
     toast('Uvoz nije uspeo: ' + e.message);
   }
