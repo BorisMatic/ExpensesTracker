@@ -28,8 +28,8 @@
           <span class="big" id="month-total">0</span>
         </div>
         <div class="card stat">
-          <span class="muted">Neplaćeno</span>
-          <span class="big warn" id="unpaid-total">0</span>
+          <span class="muted" id="year-label">Ukupno ove godine</span>
+          <span class="big" id="year-total">0</span>
         </div>
       </div>
 
@@ -71,23 +71,7 @@
           </label>
         </div>
 
-        <div class="row">
-          <label>Potrošnja <span class="muted" id="f-unit-label"></span>
-            <input type="number" id="f-quantity" inputmode="decimal" step="0.01" min="0" placeholder="opciono" />
-          </label>
-          <label>Rok plaćanja
-            <input type="date" id="f-due" />
-          </label>
-        </div>
-
-        <label>Napomena
-          <input type="text" id="f-note" placeholder="npr. račun br. 12345" />
-        </label>
-
-        <label class="switch">
-          <input type="checkbox" id="f-paid" />
-          <span>Plaćeno</span>
-        </label>
+        <p class="muted">Datum uplate se upisuje automatski (današnji).</p>
 
         <div class="actions">
           <button type="button" class="btn ghost" id="f-cancel" hidden>Otkaži</button>
@@ -101,11 +85,6 @@
     <section id="screen-history" class="screen">
       <div class="filters">
         <select id="h-category" aria-label="Kategorija"></select>
-        <select id="h-status" aria-label="Status">
-          <option value="all">Sve</option>
-          <option value="unpaid">Neplaćeno</option>
-          <option value="paid">Plaćeno</option>
-        </select>
       </div>
       <div id="history-list"></div>
     </section>

@@ -16,16 +16,14 @@ const DEFAULT_DATA = {
     { id: 'kuca', name: 'Kuća', icon: '🏡' },
   ],
   categories: [
-    { id: 'struja', name: 'Struja', icon: '⚡', unit: 'kWh' },
-    { id: 'voda', name: 'Voda', icon: '💧', unit: 'm³' },
-    { id: 'grejanje', name: 'Grejanje', icon: '🔥', unit: '' },
-    { id: 'gas', name: 'Gas', icon: '🧯', unit: 'm³' },
-    { id: 'komunalije', name: 'Komunalne usluge', icon: '🗑️', unit: '' },
-    { id: 'internet', name: 'Internet / TV', icon: '📶', unit: '' },
-    { id: 'telefon', name: 'Telefon', icon: '📞', unit: '' },
-    { id: 'porez', name: 'Porez na imovinu', icon: '🏛️', unit: '' },
-    { id: 'odrzavanje', name: 'Održavanje / popravke', icon: '🛠️', unit: '' },
-    { id: 'ostalo', name: 'Ostalo', icon: '📦', unit: '' },
+    { id: 'struja', name: 'Struja', icon: '⚡' },
+    { id: 'voda', name: 'Voda', icon: '💧' },
+    { id: 'komunalije', name: 'Komunalne usluge', icon: '🗑️' },
+    { id: 'internet', name: 'Internet / TV', icon: '📶' },
+    { id: 'telefon', name: 'Telefon', icon: '📞' },
+    { id: 'porez', name: 'Porez na imovinu', icon: '🏛️' },
+    { id: 'odrzavanje', name: 'Održavanje / popravke', icon: '🛠️' },
+    { id: 'ostalo', name: 'Ostalo', icon: '📦' },
   ],
   expenses: [],
 };
@@ -122,11 +120,7 @@ function escapeHtml(s) {
 }
 
 const propById = (id) => data.properties.find((p) => p.id === id) || { name: '?', icon: '❓' };
-const catById = (id) => data.categories.find((c) => c.id === id) || { name: '?', icon: '❓', unit: '' };
-
-function isOverdue(e) {
-  return !e.paid && e.dueDate && e.dueDate < today();
-}
+const catById = (id) => data.categories.find((c) => c.id === id) || { name: '?', icon: '❓' };
 
 function filteredExpenses() {
   return data.expenses.filter((e) => ui.propertyFilter === 'all' || e.propertyId === ui.propertyFilter);
@@ -224,7 +218,9 @@ function renderOverview() {
   const month = all.filter((e) => e.period === ui.month);
 
   $('#month-total').textContent = money(sum(month));
-  $('#unpaid-total').textContent = money(sum(all.filter((e) => !e.paid)));
+  const year = ui.month.slice(0, 4);
+  $('#year-label').textContent = `Ukupno ${year}.`;
+  $('#year-total').textContent = money(sum(all.filter((e) => e.period.startsWith(year))));
 
   $('#by-property').innerHTML = breakdown(month, 'propertyId', propById);
   $('#by-category').innerHTML = breakdown(month, 'categoryId', catById);
@@ -252,10 +248,8 @@ function renderHistory() {
     data.categories.map((c) => `<option value="${c.id}">${c.icon} ${escapeHtml(c.name)}</option>`).join('');
   catSel.value = data.categories.some((c) => c.id === prevCat) ? prevCat : 'all';
 
-  const status = $('#h-status').value;
   const list = filteredExpenses()
     .filter((e) => catSel.value === 'all' || e.categoryId === catSel.value)
-    .filter((e) => status === 'all' || (status === 'paid' ? e.paid : !e.paid))
     .sort((a, b) => b.period.localeCompare(a.period) || (b.createdAt || 0) - (a.createdAt || 0));
 
   if (!list.length) {
@@ -273,21 +267,16 @@ function renderHistory() {
     }
     const c = catById(e.categoryId);
     const p = propById(e.propertyId);
-    const qty = e.quantity ? ` · ${e.quantity} ${escapeHtml(c.unit || '')}` : '';
-    const badge = e.paid
-      ? `<span class="badge paid">plaćeno</span>`
-      : isOverdue(e)
-      ? `<span class="badge overdue">kasni · ${formatDate(e.dueDate)}</span>`
-      : `<span class="badge unpaid">neplaćeno${e.dueDate ? ' · rok ' + formatDate(e.dueDate) : ''}</span>`;
+    const paidOn = e.paidDate ? `<div class="muted">uplaćeno ${formatDate(e.paidDate)}</div>` : '';
     html += `<div class="item" data-id="${e.id}">
       <div class="icon">${c.icon}</div>
       <div class="info">
         <div class="title">${escapeHtml(c.name)}</div>
-        <div class="sub">${p.icon} ${escapeHtml(p.name)}${qty}${e.note ? ' · ' + escapeHtml(e.note) : ''}</div>
+        <div class="sub">${p.icon} ${escapeHtml(p.name)}</div>
       </div>
       <div class="right">
         <div class="amount"><strong>${money(e.amount)}</strong></div>
-        ${badge}
+        ${paidOn}
       </div>
     </div>`;
   });
@@ -295,23 +284,12 @@ function renderHistory() {
 }
 
 $('#h-category').addEventListener('change', renderHistory);
-$('#h-status').addEventListener('change', renderHistory);
 
 $('#history-list').addEventListener('click', (ev) => {
-  const badge = ev.target.closest('.badge');
   const item = ev.target.closest('.item');
   if (!item) return;
   const exp = data.expenses.find((e) => e.id === item.dataset.id);
   if (!exp) return;
-  // Klik na status = brzo označi plaćeno/neplaćeno
-  if (badge) {
-    exp.paid = !exp.paid;
-    exp.paidDate = exp.paid ? today() : null;
-    save();
-    renderHistory();
-    toast(exp.paid ? 'Označeno kao plaćeno' : 'Označeno kao neplaćeno');
-    return;
-  }
   editExpense(exp);
 });
 
@@ -340,8 +318,6 @@ function renderForm() {
     f.categoryId = id;
     renderForm();
   });
-  const unit = catById(f.categoryId).unit;
-  $('#f-unit-label').textContent = unit ? `(${unit})` : '';
 }
 
 function resetForm() {
@@ -361,10 +337,6 @@ function editExpense(e) {
   ui.form.categoryId = e.categoryId;
   $('#f-amount').value = e.amount;
   $('#f-period').value = e.period;
-  $('#f-quantity').value = e.quantity ?? '';
-  $('#f-due').value = e.dueDate || '';
-  $('#f-note').value = e.note || '';
-  $('#f-paid').checked = !!e.paid;
   $('#f-delete').hidden = false;
   $('#f-cancel').hidden = false;
   $('#f-submit').textContent = 'Sačuvaj izmene';
@@ -379,8 +351,6 @@ $('#expense-form').addEventListener('submit', (ev) => {
 
   const id = $('#f-id').value;
   const existing = id && data.expenses.find((e) => e.id === id);
-  const paid = $('#f-paid').checked;
-  const qty = $('#f-quantity').value;
 
   const exp = {
     id: id || uid(),
@@ -388,11 +358,8 @@ $('#expense-form').addEventListener('submit', (ev) => {
     categoryId: ui.form.categoryId,
     amount,
     period: $('#f-period').value || currentPeriod(),
-    quantity: qty === '' ? null : parseFloat(qty),
-    dueDate: $('#f-due').value || null,
-    note: $('#f-note').value.trim(),
-    paid,
-    paidDate: paid ? (existing && existing.paidDate) || today() : null,
+    // Unos se radi u trenutku uplate, pa se datum uplate beleži automatski
+    paidDate: (existing && existing.paidDate) || today(),
     createdAt: (existing && existing.createdAt) || Date.now(),
   };
 
@@ -439,7 +406,6 @@ function renderSettings() {
       (c) => `<div class="edit-row" data-id="${c.id}">
         <input class="emoji" value="${escapeHtml(c.icon)}" data-field="icon" />
         <input value="${escapeHtml(c.name)}" data-field="name" />
-        <input class="unit" value="${escapeHtml(c.unit || '')}" data-field="unit" placeholder="jed." />
         <button class="btn small danger" data-action="remove">✕</button>
       </div>`
     )
@@ -483,7 +449,7 @@ $('#add-property').addEventListener('click', () => {
 });
 
 $('#add-category').addEventListener('click', () => {
-  data.categories.push({ id: uid(), name: 'Nova kategorija', icon: '📌', unit: '' });
+  data.categories.push({ id: uid(), name: 'Nova kategorija', icon: '📌' });
   save();
   renderSettings();
 });
@@ -523,12 +489,12 @@ $('#export-btn').addEventListener('click', () => {
 
 $('#export-csv-btn').addEventListener('click', () => {
   const q = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
-  const header = ['Mesec', 'Nekretnina', 'Kategorija', 'Iznos', 'Valuta', 'Potrošnja', 'Jedinica', 'Rok', 'Plaćeno', 'Datum plaćanja', 'Napomena'];
+  const header = ['Mesec', 'Nekretnina', 'Kategorija', 'Iznos', 'Valuta', 'Datum uplate'];
   const rows = [...data.expenses]
     .sort((a, b) => a.period.localeCompare(b.period))
     .map((e) => {
       const c = catById(e.categoryId);
-      return [e.period, propById(e.propertyId).name, c.name, e.amount, data.currency, e.quantity ?? '', c.unit || '', e.dueDate || '', e.paid ? 'da' : 'ne', e.paidDate || '', e.note || ''].map(q).join(';');
+      return [e.period, propById(e.propertyId).name, c.name, e.amount, data.currency, e.paidDate || ''].map(q).join(';');
     });
   // BOM da bi Excel pravilno prikazao š, č, ć...
   shareFile(`troskovi-${today()}.csv`, '﻿' + [header.map(q).join(';'), ...rows].join('\n'), 'text/csv');

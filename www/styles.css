@@ -157,8 +157,6 @@ input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: -
 }
 .chip.selected { background: var(--primary); border-color: var(--primary); color: #fff; }
 
-.switch { flex-direction: row !important; align-items: center; gap: 10px !important; color: var(--text) !important; }
-.switch input { width: 22px; height: 22px; }
 
 .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 
@@ -197,17 +195,12 @@ input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: -
 .item .title { font-weight: 600; }
 .item .sub { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .item .right { text-align: right; }
-.badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; display: inline-block; margin-top: 4px; }
-.badge.paid { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
-.badge.unpaid { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
-.badge.overdue { background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger); }
 
 .empty { text-align: center; color: var(--muted); padding: 40px 0; }
 
 /* Podešavanja */
 .edit-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
 .edit-row input.emoji { width: 56px; flex: none; text-align: center; }
-.edit-row input.unit { width: 70px; flex: none; }
 
 /* Donja navigacija */
 .tabbar {

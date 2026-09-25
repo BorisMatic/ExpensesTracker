@@ -1,13 +1,13 @@
 # Troškovi 🏠⚡💧
 
 Mala Android aplikacija (Capacitor + čist HTML/JS) za praćenje režija – struja, voda,
-grejanje, gas, komunalije, internet, porez... – za **Stan 1, Stan 2 i Kuću**.
+komunalije, internet, porez... – za **Stan 1, Stan 2 i Kuću**.
 
 ## Šta aplikacija radi
 
-- **Pregled** – ukupno za mesec, neplaćeno, raspodela po nekretnini i kategoriji, grafikon za 12 meseci
-- **Unos** – nekretnina, kategorija, iznos, mesec na koji se račun odnosi, potrošnja (kWh, m³), rok plaćanja, napomena, plaćeno da/ne
-- **Istorija** – svi računi po mesecima, filteri; tap na račun = izmena, tap na status = označi plaćeno/neplaćeno; računi kojima je prošao rok su crveni
+- **Pregled** – ukupno za mesec i godinu, raspodela po nekretnini i kategoriji, grafikon za 12 meseci
+- **Unos** – nekretnina, kategorija, iznos i mesec na koji se račun odnosi; datum uplate se upisuje automatski
+- **Istorija** – svi računi po mesecima, datum uplate, filter po kategoriji; tap na račun = izmena ili brisanje
 - **Podešavanja** – valuta je KM (konvertibilna marka), preimenuj/dodaj nekretnine i kategorije, valuta, izvoz (JSON/CSV) i uvoz rezervne kopije
 
 Podaci se čuvaju **samo na telefonu**. Povremeno uradi *Izvezi (JSON)* i sačuvaj fajl na Drive.
