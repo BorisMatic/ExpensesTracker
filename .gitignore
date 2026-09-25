@@ -10,3 +10,7 @@ android/.idea/
 android/captures/
 *.apk
 *.aab
+
+# Generiše se automatski (npm install / npm run sync)
+android/
+www/vendor/

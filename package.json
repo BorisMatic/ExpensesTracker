@@ -4,9 +4,10 @@
   "description": "Mala Android aplikacija za praćenje troškova (struja, voda, grejanje...) za 2 stana i kuću",
   "private": true,
   "scripts": {
+    "postinstall": "npm run vendor",
     "vendor": "node -e \"require('fs').mkdirSync('www/vendor',{recursive:true});require('fs').copyFileSync('node_modules/@capacitor/core/dist/capacitor.js','www/vendor/capacitor.js')\"",
-    "serve": "npx --yes http-server www -p 8080 -c-1",
-    "sync": "npm run vendor && npx cap sync android",
+    "serve": "npm run vendor && npx --yes http-server www -p 8080 -c-1",
+    "sync": "npm run vendor && node -e \"process.exit(require('fs').existsSync('android')?0:1)\" || npx cap add android && npx cap sync android",
     "open": "npx cap open android",
     "apk": "npm run sync && cd android && ./gradlew assembleDebug"
   },

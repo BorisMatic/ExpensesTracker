@@ -16,8 +16,8 @@ Podaci se čuvaju **samo na telefonu**. Povremeno uradi *Izvezi (JSON)* i sačuv
 
 ```
 www/                 ← cela aplikacija (index.html, styles.css, app.js)
-www/vendor/          ← Capacitor runtime (kopira ga `npm run vendor`)
-android/             ← Android projekat koji je napravio `npx cap add android`
+www/vendor/          ← Capacitor runtime (automatski ga kopira `npm install`, nije u gitu)
+android/             ← Android projekat, pravi ga `npm run sync` (nije u gitu)
 capacitor.config.json
 .github/workflows/   ← GitHub automatski pravi APK
 ```
@@ -42,7 +42,7 @@ npm install
 # Pregled u browseru telefona: otvori http://localhost:8080
 npm run serve
 
-# Posle izmena u www/ – prebaci u Android projekat
+# Napravi android/ folder (prvi put) i prebaci izmene iz www/ u njega
 npm run sync
 
 git add -A && git commit -m "opis izmene" && git push
