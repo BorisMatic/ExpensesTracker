@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Troškovi</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1 id="screen-title">Pregled</h1>
+    <select id="property-filter" aria-label="Nekretnina"></select>
+  </header>
+
+  <main>
+    <!-- PREGLED -->
+    <section id="screen-overview" class="screen active">
+      <div class="month-nav">
+        <button class="icon-btn" id="prev-month" aria-label="Prethodni mesec">‹</button>
+        <strong id="month-label"></strong>
+        <button class="icon-btn" id="next-month" aria-label="Sledeći mesec">›</button>
+      </div>
+
+      <div class="cards">
+        <div class="card stat">
+          <span class="muted">Ukupno ovog meseca</span>
+          <span class="big" id="month-total">0</span>
+        </div>
+        <div class="card stat">
+          <span class="muted">Neplaćeno</span>
+          <span class="big warn" id="unpaid-total">0</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Po nekretnini</h2>
+        <div id="by-property"></div>
+      </div>
+
+      <div class="card">
+        <h2>Po kategoriji</h2>
+        <div id="by-category"></div>
+      </div>
+
+      <div class="card">
+        <h2>Poslednjih 12 meseci</h2>
+        <div id="year-chart" class="bars"></div>
+      </div>
+    </section>
+
+    <!-- UNOS -->
+    <section id="screen-add" class="screen">
+      <form id="expense-form" class="card form" autocomplete="off">
+        <input type="hidden" id="f-id" />
+
+        <div class="field">Nekretnina
+          <div class="chips" id="f-property"></div>
+        </div>
+
+        <div class="field">Kategorija
+          <div class="chips" id="f-category"></div>
+        </div>
+
+        <div class="row">
+          <label>Iznos
+            <input type="number" id="f-amount" inputmode="decimal" step="0.01" min="0" required placeholder="0.00" />
+          </label>
+          <label>Za mesec
+            <input type="month" id="f-period" required />
+          </label>
+        </div>
+
+        <div class="row">
+          <label>Potrošnja <span class="muted" id="f-unit-label"></span>
+            <input type="number" id="f-quantity" inputmode="decimal" step="0.01" min="0" placeholder="opciono" />
+          </label>
+          <label>Rok plaćanja
+            <input type="date" id="f-due" />
+          </label>
+        </div>
+
+        <label>Napomena
+          <input type="text" id="f-note" placeholder="npr. račun br. 12345" />
+        </label>
+
+        <label class="switch">
+          <input type="checkbox" id="f-paid" />
+          <span>Plaćeno</span>
+        </label>
+
+        <div class="actions">
+          <button type="button" class="btn ghost" id="f-cancel" hidden>Otkaži</button>
+          <button type="button" class="btn danger" id="f-delete" hidden>Obriši</button>
+          <button type="submit" class="btn primary" id="f-submit">Sačuvaj</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ISTORIJA -->
+    <section id="screen-history" class="screen">
+      <div class="filters">
+        <select id="h-category" aria-label="Kategorija"></select>
+        <select id="h-status" aria-label="Status">
+          <option value="all">Sve</option>
+          <option value="unpaid">Neplaćeno</option>
+          <option value="paid">Plaćeno</option>
+        </select>
+      </div>
+      <div id="history-list"></div>
+    </section>
+
+    <!-- PODEŠAVANJA -->
+    <section id="screen-settings" class="screen">
+      <div class="card">
+        <h2>Nekretnine</h2>
+        <div id="properties-edit"></div>
+        <button class="btn ghost" id="add-property">+ Dodaj nekretninu</button>
+      </div>
+
+      <div class="card">
+        <h2>Kategorije</h2>
+        <div id="categories-edit"></div>
+        <button class="btn ghost" id="add-category">+ Dodaj kategoriju</button>
+      </div>
+
+      <div class="card form">
+        <h2>Valuta</h2>
+        <input type="text" id="currency" maxlength="5" />
+      </div>
+
+      <div class="card">
+        <h2>Rezervna kopija</h2>
+        <p class="muted">Podaci se čuvaju samo na telefonu. Povremeno napravi izvoz da ih ne izgubiš.</p>
+        <div class="actions">
+          <button class="btn" id="export-btn">Izvezi (JSON)</button>
+          <button class="btn" id="export-csv-btn">Izvezi (CSV)</button>
+          <label class="btn">Uvezi
+            <input type="file" id="import-file" accept="application/json,.json" hidden />
+          </label>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button data-screen="overview" class="active"><span>📊</span>Pregled</button>
+    <button data-screen="add"><span>➕</span>Unos</button>
+    <button data-screen="history"><span>📋</span>Istorija</button>
+    <button data-screen="settings"><span>⚙️</span>Podešavanja</button>
+  </nav>
+
+  <div id="toast" role="status"></div>
+
+  <script src="vendor/capacitor.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
