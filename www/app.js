@@ -9,7 +9,7 @@ const STORAGE_KEY = 'troskovi.v1';
 
 const DEFAULT_DATA = {
   version: 1,
-  currency: 'RSD',
+  currency: 'KM',
   properties: [
     { id: 'stan1', name: 'Stan 1', icon: '🏢' },
     { id: 'stan2', name: 'Stan 2', icon: '🏬' },
@@ -20,7 +20,7 @@ const DEFAULT_DATA = {
     { id: 'voda', name: 'Voda', icon: '💧', unit: 'm³' },
     { id: 'grejanje', name: 'Grejanje', icon: '🔥', unit: '' },
     { id: 'gas', name: 'Gas', icon: '🧯', unit: 'm³' },
-    { id: 'infostan', name: 'Infostan / komunalije', icon: '🗑️', unit: '' },
+    { id: 'komunalije', name: 'Komunalne usluge', icon: '🗑️', unit: '' },
     { id: 'internet', name: 'Internet / TV', icon: '📶', unit: '' },
     { id: 'telefon', name: 'Telefon', icon: '📞', unit: '' },
     { id: 'porez', name: 'Porez na imovinu', icon: '🏛️', unit: '' },
@@ -91,10 +91,11 @@ function shiftPeriod(period, delta) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
+const MONTHS = ['januar', 'februar', 'mart', 'april', 'maj', 'juni', 'juli', 'august', 'septembar', 'oktobar', 'novembar', 'decembar'];
+
 function periodLabel(period, short = false) {
   const [y, m] = period.split('-').map(Number);
-  const d = new Date(y, m - 1, 1);
-  return d.toLocaleDateString('sr-Latn-RS', short ? { month: 'short' } : { month: 'long', year: 'numeric' });
+  return short ? MONTHS[m - 1].slice(0, 3) : `${MONTHS[m - 1]} ${y}.`;
 }
 
 function today() {
@@ -110,7 +111,10 @@ function formatDate(iso) {
 
 function money(n) {
   const v = Number(n) || 0;
-  return `${v.toLocaleString('sr-Latn-RS', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${data.currency}`;
+  // Format 1.234,56 KM (ne zavisi od jezika telefona)
+  const [int, dec] = Math.abs(v).toFixed(2).split('.');
+  const txt = int.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (dec === '00' ? '' : ',' + dec);
+  return `${v < 0 ? '-' : ''}${txt} ${data.currency}`;
 }
 
 function escapeHtml(s) {
@@ -234,7 +238,7 @@ function renderOverview() {
     .map(
       (p, i) => `<div class="bar ${p === ui.month ? 'current' : ''}" title="${periodLabel(p)}: ${money(totals[i])}">
         <div style="height:${((totals[i] / max) * 100).toFixed(1)}%"></div>
-        <span>${periodLabel(p, true).replace('.', '')}</span>
+        <span>${periodLabel(p, true)}</span>
       </div>`
     )
     .join('');
@@ -485,7 +489,7 @@ $('#add-category').addEventListener('click', () => {
 });
 
 $('#currency').addEventListener('change', (ev) => {
-  data.currency = ev.target.value.trim() || 'RSD';
+  data.currency = ev.target.value.trim() || 'KM';
   save();
   toast('Valuta sačuvana');
 });
