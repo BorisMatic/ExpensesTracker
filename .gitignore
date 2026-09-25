@@ -14,3 +14,4 @@ android/captures/
 # Generiše se automatski (npm install / npm run sync)
 android/
 www/vendor/
+package-lock.json
