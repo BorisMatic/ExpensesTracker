@@ -33,11 +33,11 @@
   <!-- Planned units (from drawing) -->
   <g fill="#ffffff" fill-opacity="0.85" stroke="#222" stroke-width="0.7">
     <!-- left run, 62 deep -->
-    <rect x="0" y="0" width="62" height="113"/>
-    <rect x="0" y="113" width="62" height="61"/>
-    <rect x="0" y="174" width="62" height="61"/>
+    <rect x="0" y="0" width="50" height="113"/>
+    <rect x="0" y="113" width="50" height="61"/>
+    <rect x="0" y="174" width="50" height="61"/>
     <!-- back run with hob -->
-    <rect x="62" y="0" width="106" height="60" stroke-dasharray="2 1.5"/>
+    <rect x="50" y="0" width="118" height="60" stroke-dasharray="2 1.5"/>
     <!-- right run along exterior wall, 60 deep -->
     <rect x="168" y="0" width="60" height="106"/>
     <rect x="168" y="106" width="60" height="60"/>
@@ -84,9 +84,9 @@
 
   <!-- Labels -->
   <g font-size="6" fill="#333" text-anchor="middle">
-    <text x="31" y="58">TALL / BASE</text>
-    <text x="31" y="146">BASE</text>
-    <text x="31" y="207">BASE</text>
+    <text x="36" font-size="5" y="58">BASE 50</text>
+    <text x="36" font-size="5" y="146">BASE 50</text>
+    <text x="36" font-size="5" y="207">BASE 50</text>
     <text x="101" y="66" font-size="5">HOB</text>
     <text x="198" y="108" font-size="5">SINK</text>
     <text x="196" y="163" font-size="5">DISHWASHER</text>

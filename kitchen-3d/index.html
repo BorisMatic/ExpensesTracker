@@ -343,18 +343,19 @@ function unit(name, x0, x1, z0, z1, frontFace) {
   if (frontFace === 'x-') box(groups.units, name + ' door', x0 - 0.018, x0, 0.12, UH - 0.02, z0 + g, z1 - g, front);
   if (frontFace === 'z+') box(groups.units, name + ' door', x0 + g, x1 - g, 0.12, UH - 0.02, z1, z1 + 0.018, front);
 }
-// left run (62 deep)
-unit('Left unit 1', 0, 0.62, 0, 1.13, 'x+');
-unit('Left unit 2', 0, 0.62, 1.13, 1.74, 'x+');
-unit('Left unit 3', 0, 0.62, 1.74, 2.35, 'x+');
+// left run, 50 cm deep from the wall (the drawing has 62)
+const LD = 0.50;
+unit('Left unit 1', 0, LD, 0, 1.13, 'x+');
+unit('Left unit 2', 0, LD, 1.13, 1.74, 'x+');
+unit('Left unit 3', 0, LD, 1.74, 2.35, 'x+');
 // back run
-unit('Hob unit', 0.62, 1.68, 0, 0.60, 'z+');
+unit('Hob unit', LD, 1.68, 0, 0.60, 'z+');
 // right run (60 deep)
 unit('Sink unit', 1.68, W, 0, 1.06, 'x-');
 unit('Dishwasher (integrated)', 1.68, W, 1.06, 1.66, 'x-');
 // worktops
-box(groups.units, 'Worktop left', 0, 0.64, UH, UH + TOP, 0, D, top);
-box(groups.units, 'Worktop back', 0.64, 1.66, UH, UH + TOP, 0, 0.62, top);
+box(groups.units, 'Worktop left', 0, LD + 0.02, UH, UH + TOP, 0, D, top);
+box(groups.units, 'Worktop back', LD + 0.02, 1.66, UH, UH + TOP, 0, 0.62, top);
 box(groups.units, 'Worktop right', 1.66, W, UH, UH + TOP, 0, FZ, top);
 // hob (glass with 4 zones)
 const hob = box(groups.units, 'Hob', 0.70, 1.32, UH + TOP, UH + TOP + 0.006, 0.03, 0.55, mat(0x111111, { roughness: 0.15 }));
