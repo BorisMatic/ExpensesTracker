@@ -388,7 +388,8 @@ const top = new THREE.MeshStandardMaterial({ map: stoneTex, roughness: 0.3, meta
 const UH = 0.87, TOP = 0.03;
 const FZ = 1.66, FRIDGE_TOP = 2.05; // fridge housing starts at z = 1.66 (69 cm wide), fridge door up to 205 cm
 const plinth = mat(0x3d3a37);
-function unit(name, x0, x1, z0, z1, frontFace) {
+const steel = mat(0xb8bcc0, { metalness: 0.7, roughness: 0.3 });
+function unit(name, x0, x1, z0, z1, frontFace, fronts = true) {
   box(groups.units, name, x0, x1, 0.10, UH, z0, z1, carcass);
   const r = 0.05; // plinth recess on the door side
   box(groups.units, name + ' plinth', x0 + (frontFace === 'x-' ? r : 0), x1 - (frontFace === 'x+' ? r : 0), 0, 0.10, z0, z1 - (frontFace === 'z+' ? r : 0), plinth);
@@ -396,7 +397,7 @@ function unit(name, x0, x1, z0, z1, frontFace) {
   const g = 0.003, ft = UH - 0.04; // 4 cm grip channel under the worktop (handleless)
   if (frontFace === 'x+') box(groups.units, name + ' door', x1, x1 + 0.018, 0.12, ft, z0 + g, z1 - g, front);
   if (frontFace === 'x-') box(groups.units, name + ' door', x0 - 0.018, x0, 0.12, ft, z0 + g, z1 - g, front);
-  if (frontFace === 'z+') { // two deep drawers
+  if (frontFace === 'z+' && fronts) { // two deep drawers
     const mid = (0.12 + ft) / 2;
     box(groups.units, name + ' drawer', x0 + g, x1 - g, 0.12, mid - 0.02, z1, z1 + 0.018, front);
     box(groups.units, name + ' drawer', x0 + g, x1 - g, mid + 0.02, ft, z1, z1 + 0.018, front);
@@ -408,7 +409,30 @@ unit('Left unit 1', 0, LD, 0, 1.13, 'x+');
 unit('Left unit 2', 0, LD, 1.13, 1.74, 'x+');
 unit('Left unit 3', 0, LD, 1.74, 2.35, 'x+');
 // back run
-unit('Hob unit', LD, 1.68, 0, 0.60, 'z+');
+unit('Hob unit', LD, 1.68, 0, 0.60, 'z+', false);
+{ // fronts of the hob run: narrow pull-out | built-in oven under the hob | two drawers
+  const z = 0.60, t = 0.018, g = 0.003, ft = UH - 0.04, mid = (0.12 + ft) / 2;
+  const OX0 = 0.71, OX1 = 1.31;                        // oven 60 cm, centred under the hob
+  box(groups.units, 'Pull-out (narrow)', LD + g, OX0 - g, 0.12, ft, z, z + t, front);
+  box(groups.units, 'Drawer', OX1 + g, 1.68 - g, 0.12, mid - 0.02, z, z + t, front);
+  box(groups.units, 'Drawer', OX1 + g, 1.68 - g, mid + 0.02, ft, z, z + t, front);
+  // built-in oven: 60 × 60, black glass door, control strip on top, small drawer below
+  const OY0 = 0.21, OY1 = ft;
+  const ovenGlass = mat(0x151617, { roughness: 0.08, metalness: 0.3 });
+  const ovenWindow = mat(0x2a2c2e, { roughness: 0.05, metalness: 0.4, transparent: true, opacity: 0.9 });
+  box(groups.units, 'Oven drawer', OX0 + g, OX1 - g, 0.12, OY0 - g, z, z + t, front);
+  box(groups.units, 'Oven door', OX0 + g, OX1 - g, OY0, OY1 - 0.09, z, z + 0.022, ovenGlass);
+  box(groups.units, 'Oven window', OX0 + 0.07, OX1 - 0.07, OY0 + 0.07, OY1 - 0.20, z + 0.022, z + 0.024, ovenWindow);
+  box(groups.units, 'Oven handle', OX0 + 0.05, OX1 - 0.05, OY1 - 0.14, OY1 - 0.125, z + 0.035, z + 0.05, steel);
+  for (const x of [OX0 + 0.05, OX1 - 0.05]) box(groups.units, 'Oven handle post', x - 0.006, x + 0.006, OY1 - 0.14, OY1 - 0.125, z + 0.022, z + 0.035, steel);
+  box(groups.units, 'Oven control panel', OX0 + g, OX1 - g, OY1 - 0.09 + g, OY1, z, z + 0.022, mat(0x1b1c1d, { roughness: 0.2, metalness: 0.5 }));
+  const disp = box(groups.units, 'Oven display', (OX0 + OX1) / 2 - 0.05, (OX0 + OX1) / 2 + 0.05, OY1 - 0.06, OY1 - 0.035, z + 0.022, z + 0.023, new THREE.MeshBasicMaterial({ color: 0xffa64d }));
+  disp.castShadow = false;
+  for (const x of [OX0 + 0.08, OX1 - 0.08]) {
+    const k = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.02, 24), steel);
+    k.rotation.x = Math.PI / 2; k.position.set(x, OY1 - 0.045, z + 0.032); k.name = 'Oven knob'; groups.units.add(k);
+  }
+}
 // right run (60 deep)
 unit('Sink unit', 1.68, W, 0, 1.06, 'x-');
 unit('Dishwasher (integrated)', 1.68, W, 1.06, 1.66, 'x-');
@@ -470,7 +494,7 @@ function upper(name, x0, x1, y0, z0, z1, face, split = true, led = true) {
 upper('Wall cabinet back-left', 0, 0.71, UB, 0, UD, 'z+');
 // built-in (integrated) cooker hood: hidden in the cabinet above the hob, only the pull-out visor shows.
 // Its bottom sits 65 cm above the hob, so this one cabinet starts a little higher than its neighbours.
-const HOOD_Y = 1.55, steel = mat(0xb8bcc0, { metalness: 0.7, roughness: 0.3 });
+const HOOD_Y = 1.55;
 upper('Wall cabinet with built-in hood', 0.71, 1.31, HOOD_Y + 0.06, 0, UD, 'z+', true, false);
 box(groups.uppers, 'Built-in hood body', 0.72, 1.30, HOOD_Y, HOOD_Y + 0.06, 0, UD - 0.02, UBODY);
 box(groups.uppers, 'Built-in hood visor (pull-out)', 0.72, 1.30, HOOD_Y, HOOD_Y + 0.06, UD - 0.02, UD + 0.03, UFRONT);
