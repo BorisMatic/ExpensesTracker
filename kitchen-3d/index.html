@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kitchen 228 × 235</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@400;600&display=swap">
+<style>
+  /* Layout: full-bleed WebGL scene, a drafting-sheet control panel floating top-left, plan sheet on demand. */
+  :root {
+    --bg: #e9ebe8;
+    --panel: #fbfbf9;
+    --ink: #1d2320;
+    --muted: #5d6762;
+    --line: #c9cec9;
+    --accent: #b0602a;
+    --scene: #dfe2de;
+    --font-ui: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+    --font-data: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161a18; --panel: #202522; --ink: #e8ebe8; --muted: #9aa49e; --line: #38403b;
+      --accent: #e08a4e; --scene: #1c201e; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161a18; --panel: #202522; --ink: #e8ebe8; --muted: #9aa49e; --line: #38403b;
+    --accent: #e08a4e; --scene: #1c201e; color-scheme: dark;
+  }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 14px; overflow: hidden; }
+  #view { position: fixed; inset: 0; }
+  #view canvas { display: block; }
+  .panel {
+    position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); left: 16px;
+    width: min(290px, calc(100vw - 32px)); max-height: calc(100% - 32px); overflow: auto;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 4px;
+    padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box;
+  }
+  .panel h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.01em; text-wrap: balance; }
+  .meta { font-family: var(--font-data); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.5; }
+  .eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 6px; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; }
+  button {
+    font: 500 12px var(--font-data); color: var(--ink); background: transparent;
+    border: 1px solid var(--line); border-radius: 3px; padding: 6px 9px; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+  button:focus-visible, label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .toggles { display: grid; gap: 6px; }
+  .toggles label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .toggles input { accent-color: var(--accent); margin: 0; }
+  .legend { display: grid; grid-template-columns: 12px 1fr; gap: 4px 8px; align-items: center; font-size: 12px; color: var(--muted); }
+  .sw { width: 12px; height: 12px; border-radius: 2px; border: 1px solid var(--line); }
+  .note { font-size: 12px; color: var(--muted); line-height: 1.45; margin: 0; }
+  #collapse { align-self: flex-start; }
+  .panel.min > :not(header) { display: none; }
+  header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .label3d {
+    font: 500 12px var(--font-data); color: #1d2320; background: rgba(255,255,255,0.85);
+    padding: 1px 5px; border-radius: 2px; white-space: nowrap; pointer-events: none;
+  }
+  .label3d.tag { color: #fff; background: rgba(176,96,42,0.9); font-size: 11px; }
+  .sheet {
+    position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    width: min(420px, calc(100vw - 32px)); background: #fff; border: 1px solid var(--line); border-radius: 4px; padding: 6px; box-sizing: border-box;
+  }
+  .sheet img { display: block; width: 100%; height: auto; }
+  @media (max-width: 560px) {
+    .panel { max-height: 46%; }
+  }
+</style>
+</head>
+<body>
+<div id="view" aria-label="3D model of the kitchen"></div>
+
+<aside class="panel" id="panel">
+  <header>
+    <div>
+      <h1>Kitchen 228 × 235</h1>
+      <div class="meta">5.36 m² · ceiling 2.60 m<br>walls 12 · 12 · 20 (exterior)</div>
+    </div>
+    <button id="collapse" aria-expanded="true" title="Collapse panel">–</button>
+  </header>
+
+  <section>
+    <p class="eyebrow">Camera</p>
+    <div class="row" role="group" aria-label="Camera presets">
+      <button data-view="orbit" aria-pressed="true">3D</button>
+      <button data-view="photo" aria-pressed="false">Photo angle</button>
+      <button data-view="top" aria-pressed="false">Plan</button>
+      <button data-view="walk" aria-pressed="false">Inside</button>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Layers</p>
+    <div class="toggles">
+      <label><input type="checkbox" id="t-units" checked> Planned units (from drawing)</label>
+      <label><input type="checkbox" id="t-inst" checked> Pipes, outlets, cable (from photo)</label>
+      <label><input type="checkbox" id="t-dims" checked> Dimensions</label>
+      <label><input type="checkbox" id="t-ceiling"> Ceiling</label>
+      <label><input type="checkbox" id="t-plan"> 2D plan sheet</label>
+    </div>
+  </section>
+
+  <section class="legend" aria-label="Legend">
+    <span class="sw" style="background:#e3d6bf"></span><span>Floor tile 120 × 60, travertine look</span>
+    <span class="sw" style="background:#a9aaa6"></span><span>Adhesive / waterproofing band, ≈ 105 cm</span>
+    <span class="sw" style="background:#cfd2cf"></span><span>Exterior wall 20 cm</span>
+    <span class="sw" style="background:#c79a6b"></span><span>Planned base units, 90 cm</span>
+  </section>
+
+  <div class="row">
+    <button id="export">Export .glb</button>
+  </div>
+  <p class="note">Drag to orbit, scroll or pinch to zoom, right-drag to pan. Installation positions are estimated from the photo.</p>
+</aside>
+
+<div class="sheet" id="sheet" hidden><img src="kitchen-plan.svg" alt="2D floor plan of the kitchen, 228 by 235 cm"></div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+
+// ---------- Dimensions (metres). Origin = inner back-left floor corner; +x right, +z toward the open front, +y up.
+const W = 2.28, D = 2.35, H = 2.60;
+const T_BACK = 0.12, T_LEFT = 0.12, T_EXT = 0.20;
+const BAND = 1.05; // height of grey adhesive band seen in the photo
+
+const host = document.getElementById('view');
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+host.appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.domElement.style.cssText = 'position:absolute;inset:0;pointer-events:none';
+host.appendChild(labelRenderer.domElement);
+
+const scene = new THREE.Scene();
+const sceneBg = () => getComputedStyle(document.documentElement).getPropertyValue('--scene').trim() || '#dfe2de';
+scene.background = new THREE.Color(sceneBg());
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => scene.background.set(sceneBg()));
+new MutationObserver(() => scene.background.set(sceneBg())).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 100);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+// ---------- Lights
+scene.add(new THREE.HemisphereLight(0xffffff, 0xb8b0a0, 1.1));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+sun.position.set(-2.5, 5, 5);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4 });
+scene.add(sun);
+const bulb = new THREE.PointLight(0xfff2dd, 1.2, 6, 1.5);
+bulb.position.set(W * 0.7, H - 0.3, 0.8);
+scene.add(bulb);
+
+// ---------- Textures (drawn on canvas, no external images)
+function canvasTex(w, h, draw, repeatX = 1, repeatY = 1) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(repeatX, repeatY);
+  t.anisotropy = 8;
+  return t;
+}
+// Seeded noise so the model looks the same every load
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+// Floor: 120 × 60 cm tiles laid with the long side across the room, slight stagger per row (as in the photo)
+const PX = 4; // px per cm
+const floorTex = canvasTex(Math.round(W * 100 * PX), Math.round(D * 100 * PX), (g, w, h) => {
+  g.fillStyle = '#e3d6bf'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 900; i++) { // travertine veining
+    const y = rnd() * h, x = rnd() * w, len = 40 + rnd() * 260;
+    g.strokeStyle = `rgba(${150 + rnd() * 40},${125 + rnd() * 30},${90 + rnd() * 30},${0.03 + rnd() * 0.05})`;
+    g.lineWidth = 2 + rnd() * 6;
+    g.beginPath(); g.moveTo(x, y);
+    g.bezierCurveTo(x + len * 0.3, y + (rnd() - 0.5) * 8, x + len * 0.7, y + (rnd() - 0.5) * 8, x + len, y + (rnd() - 0.5) * 6);
+    g.stroke();
+  }
+  g.strokeStyle = '#7d7466'; g.lineWidth = 2;
+  const rowH = 60 * PX;
+  for (let r = 0; r * rowH < h; r++) {
+    const y = r * rowH;
+    g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke();
+    const jx = (108 + r * 10) * PX; // vertical joint drifts 10 cm per row
+    g.beginPath(); g.moveTo(jx, y); g.lineTo(jx, Math.min(y + rowH, h)); g.stroke();
+  }
+});
+
+// Wall: white plaster above, patchy grey adhesive band below
+function wallTex(lenM) {
+  const pw = Math.round(lenM * 100 * 2), ph = Math.round(H * 100 * 2);
+  return canvasTex(pw, ph, (g, w, h) => {
+    g.fillStyle = '#f2f2ef'; g.fillRect(0, 0, w, h);
+    const bandTop = h - BAND * 200;
+    g.fillStyle = '#a9aaa6';
+    g.beginPath(); g.moveTo(0, h);
+    for (let x = 0; x <= w; x += 10) g.lineTo(x, bandTop + Math.sin(x * 0.02) * 5 + (rnd() - 0.5) * 4);
+    g.lineTo(w, h); g.closePath(); g.fill();
+    for (let i = 0; i < w * 0.6; i++) { // trowel marks
+      const x = rnd() * w, y = bandTop + 10 + rnd() * (h - bandTop - 10);
+      g.fillStyle = `rgba(${rnd() > 0.5 ? '200,200,196' : '120,121,118'},${0.15 + rnd() * 0.25})`;
+      g.fillRect(x, y, 4 + rnd() * 30, 3 + rnd() * 25);
+    }
+  });
+}
+
+// ---------- Helpers
+const root = new THREE.Group(); root.name = 'Kitchen'; scene.add(root);
+const groups = {};
+for (const k of ['shell', 'units', 'inst', 'dims', 'ceiling']) { groups[k] = new THREE.Group(); groups[k].name = k; root.add(groups[k]); }
+
+function box(group, name, x0, x1, y0, y1, z0, z1, mat) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), mat);
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+  m.name = name; m.castShadow = m.receiveShadow = true;
+  group.add(m); return m;
+}
+const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, ...extra });
+const plain = mat(0xf2f2ef);
+const extWall = mat(0xcfd2cf);
+const cut = mat(0x8c908c); // wall section colour (top faces)
+
+// ---------- Floor
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.35 }));
+floor.rotation.x = -Math.PI / 2; floor.position.set(W / 2, 0.001, D / 2);
+floor.receiveShadow = true; floor.name = 'Floor tiles'; groups.shell.add(floor);
+// screed outside the room (unfinished)
+const screed = new THREE.Mesh(new THREE.PlaneGeometry(6, 5), mat(0xb9b6ae));
+screed.rotation.x = -Math.PI / 2; screed.position.set(W / 2, -0.005, D / 2 + 1); screed.receiveShadow = true; screed.name = 'Screed';
+groups.shell.add(screed);
+// aluminium edge trim at the open front
+box(groups.shell, 'Tile edge trim', 0, W, 0, 0.012, D - 0.008, D + 0.004, mat(0xc0c4c8, { metalness: 0.7, roughness: 0.3 }));
+// skirting tiles (thin strip visible in photo)
+const skirtMat = mat(0xd9cbb2, { roughness: 0.4 });
+box(groups.shell, 'Skirting back', 0, W, 0, 0.07, 0, 0.008, skirtMat);
+box(groups.shell, 'Skirting left', 0, 0.008, 0, 0.07, 0, D, skirtMat);
+box(groups.shell, 'Skirting right', W - 0.008, W, 0, 0.07, 0, D, skirtMat);
+
+// ---------- Walls (inner faces textured, other faces plain)
+function wall(name, x0, x1, z0, z1, innerFace, lenM, baseMat) {
+  const tex = wallTex(lenM);
+  const inner = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95 });
+  // BoxGeometry face order: +x, -x, +y, -y, +z, -z
+  const mats = [baseMat, baseMat, cut, baseMat, baseMat, baseMat];
+  mats[innerFace] = inner;
+  const g = new THREE.BoxGeometry(x1 - x0, H, z1 - z0);
+  const m = new THREE.Mesh(g, mats);
+  m.position.set((x0 + x1) / 2, H / 2, (z0 + z1) / 2);
+  m.castShadow = m.receiveShadow = true; m.name = name;
+  groups.shell.add(m);
+  return m;
+}
+wall('Back wall 12 cm', -T_LEFT, W + T_EXT, -T_BACK, 0, 4, W + T_LEFT + T_EXT, plain);
+wall('Left wall 12 cm', -T_LEFT, 0, 0, D, 0, D, plain);
+wall('Exterior wall 20 cm', W, W + T_EXT, 0, D, 1, D, extWall);
+
+// Ceiling
+const ceil = new THREE.Mesh(new THREE.PlaneGeometry(W + T_LEFT + T_EXT, D + T_BACK), mat(0xfafaf8, { side: THREE.DoubleSide }));
+ceil.rotation.x = Math.PI / 2; ceil.position.set((W + T_EXT - T_LEFT) / 2, H, (D - T_BACK) / 2); ceil.name = 'Ceiling';
+groups.ceiling.add(ceil);
+groups.ceiling.visible = false;
+
+// ---------- Installations seen in the photo (approximate positions)
+const red = mat(0xc0392b), blue = mat(0x2c6fbb), dark = mat(0x2a2a2a), whiteCable = mat(0xffffff, { roughness: 0.5 }), chrome = mat(0xdadde0, { metalness: 0.8, roughness: 0.25 });
+function hole(name, x, y, z, normal, r = 0.035, ring = dark) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.012, 24), ring);
+  m.name = name;
+  if (normal === 'z') { m.rotation.x = Math.PI / 2; m.position.set(x, y, z + 0.004); }
+  else { m.rotation.z = Math.PI / 2; m.position.set(x + (normal === '-x' ? -0.004 : 0.004), y, z); }
+  groups.inst.add(m); return m;
+}
+// back wall
+hole('Back wall: outlet box (hob height)', 0.74, 1.60, 0, 'z');
+hole('Back wall: outlet box', 1.77, 1.00, 0, 'z');
+hole('Back wall: outlet box', 2.03, 1.00, 0, 'z');
+hole('Back wall: conduit (red)', 0.75, 0.26, 0, 'z', 0.03, red);
+hole('Back wall: hood cable entry', 1.70, 2.30, 0, 'z', 0.04);
+// hood cable hanging from the ceiling
+const curve = new THREE.CatmullRomCurve3([
+  new THREE.Vector3(1.66, H, 0.02), new THREE.Vector3(1.62, H - 0.25, 0.03),
+  new THREE.Vector3(1.60, H - 0.6, 0.03), new THREE.Vector3(1.66, H - 0.75, 0.02), new THREE.Vector3(1.70, 2.30, 0.01)]);
+const cable = new THREE.Mesh(new THREE.TubeGeometry(curve, 40, 0.006, 8), whiteCable);
+cable.name = 'Hood cable'; groups.inst.add(cable);
+// exterior wall: water supply with angle valves (sink)
+const pipeX = W - 0.01;
+for (const [z, c] of [[0.22, red], [0.30, blue]]) {
+  const v = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.08, 16), chrome);
+  v.rotation.z = Math.PI / 2; v.position.set(pipeX - 0.04, 0.48, z); v.name = 'Angle valve'; groups.inst.add(v);
+  const k = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.025, 0.025), c);
+  k.position.set(pipeX - 0.06, 0.50, z); k.name = 'Valve handle'; groups.inst.add(k);
+}
+const hose = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.006, 8, 24, Math.PI * 1.4), chrome);
+hose.rotation.y = Math.PI / 2; hose.position.set(pipeX - 0.07, 0.58, 0.26); hose.name = 'Flexible hose'; groups.inst.add(hose);
+hole('Exterior wall: waste pipe', W, 0.42, 0.40, '-x', 0.025);
+hole('Exterior wall: outlet box', W, 0.15, 0.62, '-x');
+hole('Exterior wall: outlet box', W, 0.12, 1.65, '-x');
+// left wall: cable near the front edge
+hole('Left wall: cable', 0, 1.50, 2.05, 'x', 0.02);
+const lc = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+  new THREE.Vector3(0.0, 1.50, 2.05), new THREE.Vector3(0.05, 1.47, 2.08), new THREE.Vector3(0.07, 1.42, 2.13), new THREE.Vector3(0.04, 1.40, 2.16)]), 20, 0.005, 8), whiteCable);
+lc.name = 'Left wall cable'; groups.inst.add(lc);
+
+// ---------- Planned units from the drawing (base units 90 cm, worktop 3 cm)
+const carcass = mat(0xc79a6b, { transparent: true, opacity: 0.92, roughness: 0.6 });
+const front = mat(0xf4f1ea, { roughness: 0.5 });
+const top = mat(0x6b6660, { roughness: 0.4 });
+const UH = 0.87, TOP = 0.03;
+const plinth = mat(0x3a3a3a);
+function unit(name, x0, x1, z0, z1, frontFace) {
+  box(groups.units, name, x0, x1, 0.10, UH, z0, z1, carcass);
+  const r = 0.05; // plinth recess on the door side
+  box(groups.units, name + ' plinth', x0 + (frontFace === 'x-' ? r : 0), x1 - (frontFace === 'x+' ? r : 0), 0, 0.10, z0, z1 - (frontFace === 'z+' ? r : 0), plinth);
+  // door panel
+  const g = 0.003;
+  if (frontFace === 'x+') box(groups.units, name + ' door', x1, x1 + 0.018, 0.12, UH - 0.02, z0 + g, z1 - g, front);
+  if (frontFace === 'x-') box(groups.units, name + ' door', x0 - 0.018, x0, 0.12, UH - 0.02, z0 + g, z1 - g, front);
+  if (frontFace === 'z+') box(groups.units, name + ' door', x0 + g, x1 - g, 0.12, UH - 0.02, z1, z1 + 0.018, front);
+}
+// left run (62 deep)
+unit('Left unit 1', 0, 0.62, 0, 1.13, 'x+');
+unit('Left unit 2', 0, 0.62, 1.13, 1.74, 'x+');
+unit('Left unit 3', 0, 0.62, 1.74, 2.35, 'x+');
+// back run
+unit('Hob unit', 0.62, 1.68, 0, 0.60, 'z+');
+// right run (60 deep)
+unit('Sink unit', 1.68, W, 0, 1.06, 'x-');
+unit('Washer / dishwasher', 1.68, W, 1.06, 1.66, 'x-');
+unit('Right unit 3', 1.68, W, 1.66, 2.35, 'x-');
+// worktops
+box(groups.units, 'Worktop left', 0, 0.64, UH, UH + TOP, 0, D, top);
+box(groups.units, 'Worktop back', 0.64, 1.66, UH, UH + TOP, 0, 0.62, top);
+box(groups.units, 'Worktop right', 1.66, W, UH, UH + TOP, 0, D, top);
+// hob (glass with 4 zones)
+const hob = box(groups.units, 'Hob', 0.70, 1.32, UH + TOP, UH + TOP + 0.006, 0.03, 0.55, mat(0x111111, { roughness: 0.15 }));
+for (const [x, z, r] of [[0.84, 0.17, 0.08], [1.17, 0.17, 0.065], [0.84, 0.41, 0.065], [1.17, 0.41, 0.09]]) {
+  const ring = new THREE.Mesh(new THREE.RingGeometry(r - 0.006, r, 40), mat(0x777777));
+  ring.rotation.x = -Math.PI / 2; ring.position.set(x, UH + TOP + 0.008, z); ring.name = 'Hob zone'; groups.units.add(ring);
+}
+// hood
+box(groups.units, 'Hood', 0.71, 1.31, 1.55, 1.68, 0, 0.50, mat(0xb8bcc0, { metalness: 0.6, roughness: 0.35 }));
+box(groups.units, 'Hood chimney', 0.88, 1.14, 1.68, H, 0, 0.26, mat(0xb8bcc0, { metalness: 0.6, roughness: 0.35 }));
+// round sink + tap
+const sink = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.18, 0.012, 48), chrome);
+sink.position.set(2.02, UH + TOP + 0.002, 0.79); sink.name = 'Sink'; groups.units.add(sink);
+const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.175, 0.175, 0.006, 48), mat(0x9fa4a8, { metalness: 0.7, roughness: 0.3 }));
+bowl.position.set(2.02, UH + TOP + 0.010, 0.79); groups.units.add(bowl);
+const tap = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+  new THREE.Vector3(2.24, UH + TOP, 0.79), new THREE.Vector3(2.24, UH + 0.30, 0.79), new THREE.Vector3(2.18, UH + 0.36, 0.79), new THREE.Vector3(2.12, UH + 0.28, 0.79)]), 24, 0.012, 12), chrome);
+tap.name = 'Tap'; groups.units.add(tap);
+// washer door
+const door = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.02, 40), mat(0x3c4650, { metalness: 0.3, roughness: 0.2, transparent: true, opacity: 0.85 }));
+door.rotation.z = Math.PI / 2; door.position.set(1.66 - 0.012, 0.48, 1.36); door.name = 'Washer door'; groups.units.add(door);
+
+// ---------- Dimension labels
+function label(text, x, y, z, cls = '') {
+  const el = document.createElement('div'); el.className = 'label3d ' + cls; el.textContent = text;
+  const o = new CSS2DObject(el); o.position.set(x, y, z); groups.dims.add(o); return o;
+}
+function dimLine(a, b) {
+  const g = new THREE.BufferGeometry().setFromPoints([a, b]);
+  const l = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0xb0602a })); l.name = 'dim'; groups.dims.add(l);
+  for (const p of [a, b]) {
+    const t = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), new THREE.MeshBasicMaterial({ color: 0xb0602a }));
+    t.position.copy(p); groups.dims.add(t);
+  }
+}
+const yD = 0.02;
+dimLine(new THREE.Vector3(0, yD, D + 0.15), new THREE.Vector3(W, yD, D + 0.15)); label('228', W / 2, yD, D + 0.15);
+dimLine(new THREE.Vector3(W + T_EXT + 0.15, yD, 0), new THREE.Vector3(W + T_EXT + 0.15, yD, D)); label('235', W + T_EXT + 0.15, yD, D / 2);
+dimLine(new THREE.Vector3(-T_LEFT - 0.15, 0, D), new THREE.Vector3(-T_LEFT - 0.15, H, D)); label('260', -T_LEFT - 0.15, H / 2, D);
+label('12', -T_LEFT / 2, H + 0.05, D, 'tag');
+label('20', W + T_EXT / 2, H + 0.05, D, 'tag');
+label('12', W / 2, H + 0.05, -T_BACK / 2, 'tag');
+
+// ---------- Camera presets
+const views = {
+  orbit: { pos: [-1.6, 3.6, 5.2], tgt: [W / 2, 0.6, D / 2] },
+  photo: { pos: [1.05, 1.65, 3.85], tgt: [1.15, 0.8, 0.6], fov: 62 },
+  top:   { pos: [W / 2, 14, D / 2 + 0.001], tgt: [W / 2, 0, D / 2], fov: 20 },
+  walk:  { pos: [1.15, 1.6, 2.0], tgt: [1.15, 1.3, 0], fov: 75 },
+};
+let anim = null;
+function setView(name, instant = false) {
+  const v = views[name];
+  document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === name)));
+  const from = { p: camera.position.clone(), t: controls.target.clone(), f: camera.fov };
+  const to = { p: new THREE.Vector3(...v.pos), t: new THREE.Vector3(...v.tgt), f: v.fov || 45 };
+  if (instant || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    camera.position.copy(to.p); controls.target.copy(to.t); camera.fov = to.f; camera.updateProjectionMatrix(); return;
+  }
+  anim = { from, to, t0: performance.now(), dur: 900 };
+}
+document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+setView('orbit', true);
+
+// ---------- Layer toggles
+const bind = (id, fn) => { const el = document.getElementById(id); el.addEventListener('change', () => fn(el.checked)); fn(el.checked); };
+bind('t-units', on => groups.units.visible = on);
+bind('t-inst', on => groups.inst.visible = on);
+bind('t-dims', on => { groups.dims.visible = on; groups.dims.traverse(o => { if (o.isCSS2DObject) o.element.style.display = on ? '' : 'none'; }); });
+bind('t-ceiling', on => groups.ceiling.visible = on);
+bind('t-plan', on => document.getElementById('sheet').hidden = !on);
+
+const panel = document.getElementById('panel'), collapse = document.getElementById('collapse');
+collapse.addEventListener('click', () => {
+  const min = panel.classList.toggle('min');
+  collapse.textContent = min ? '+' : '–'; collapse.setAttribute('aria-expanded', String(!min));
+});
+
+// ---------- Export model as GLB (works when the page is served locally)
+document.getElementById('export').addEventListener('click', () => {
+  const btn = document.getElementById('export');
+  new GLTFExporter().parse(root, buf => {
+    const url = URL.createObjectURL(new Blob([buf], { type: 'model/gltf-binary' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: 'kitchen.glb' });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    btn.textContent = 'Exported kitchen.glb';
+  }, err => { btn.textContent = 'Export failed'; console.error(err); },
+  { binary: true, onlyVisible: true });
+});
+
+// ---------- Render loop
+function resize() {
+  const w = host.clientWidth, h = host.clientHeight;
+  renderer.setSize(w, h); labelRenderer.setSize(w, h);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+renderer.setAnimationLoop(now => {
+  if (anim) {
+    const k = Math.min(1, (now - anim.t0) / anim.dur), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    camera.position.lerpVectors(anim.from.p, anim.to.p, e);
+    controls.target.lerpVectors(anim.from.t, anim.to.t, e);
+    camera.fov = anim.from.f + (anim.to.f - anim.from.f) * e; camera.updateProjectionMatrix();
+    if (k === 1) anim = null;
+  }
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+});
+</script>
+</body>
+</html>
