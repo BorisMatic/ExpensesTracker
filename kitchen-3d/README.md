@@ -3,7 +3,7 @@
 Kitchen interior, 228 × 235 cm, traced from the floor plan and checked against a photo of the site.
 
 - `kitchen-plan.svg`: 2D floor plan in centimetres.
-- `index.html`: WebGL (three.js) 3D model with walls, a tiled floor, pipes and outlets from the photo, and the planned units.
+- `index.html`: WebGL (three.js) 3D model with walls, a tiled floor, pipes and outlets from the photo, and the planned base units, wall cabinets up to the ceiling (back and exterior wall) and oak shelves on the left wall.
 
 ## Open it
 

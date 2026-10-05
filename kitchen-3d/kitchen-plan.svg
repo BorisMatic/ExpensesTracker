@@ -69,6 +69,19 @@
   <!-- free floor zone (dashed in drawing) -->
   <rect x="66" y="60" width="78" height="175" fill="none" stroke="#777" stroke-width="0.6" stroke-dasharray="1.5 1.5"/>
 
+  <!-- Wall cabinets 35 deep, 145 cm to ceiling (shown dashed, above) -->
+  <g fill="none" stroke="#b0602a" stroke-width="0.8" stroke-dasharray="4 2">
+    <rect x="0" y="0" width="71" height="35"/>
+    <rect x="71" y="0" width="60" height="35"/>
+    <rect x="131" y="0" width="62" height="35"/>
+    <rect x="193" y="0" width="35" height="235"/>
+    <line x1="193" y1="60" x2="228" y2="60"/><line x1="193" y1="120" x2="228" y2="120"/><line x1="193" y1="180" x2="228" y2="180"/>
+  </g>
+  <!-- Oak shelves on left wall, 22 deep -->
+  <rect x="0" y="75" width="22" height="90" fill="#c9955e" fill-opacity="0.35" stroke="#8a5a2b" stroke-width="0.7"/>
+  <text x="11" y="122" font-size="4.5" fill="#6b4420" text-anchor="middle" transform="rotate(-90 11 120)">SHELVES</text>
+  <text x="101" y="31" font-size="4.5" fill="#b0602a" text-anchor="middle">UPPER ABOVE HOOD</text>
+
   <!-- Labels -->
   <g font-size="6" fill="#333" text-anchor="middle">
     <text x="31" y="58">TALL / BASE</text>
@@ -105,4 +118,5 @@
   </g>
   <text x="-70" y="-62" font-size="9" fill="#111" font-weight="bold">KITCHEN · 228 × 235 cm · ≈ 5.36 m²</text>
   <text x="-70" y="312" font-size="6" fill="#555">Units: cm. Back wall 12, left wall 12, exterior wall 20 (hatched). Front side open.</text>
+  <text x="-70" y="302" font-size="6" fill="#b0602a">Dashed orange: wall cabinets 35 deep, from 145 cm to ceiling (back + exterior wall).</text>
 </svg>
