@@ -363,8 +363,6 @@ for (const [x, z, r] of [[0.84, 0.17, 0.08], [1.17, 0.17, 0.065], [0.84, 0.41, 0
   ring.rotation.x = -Math.PI / 2; ring.position.set(x, UH + TOP + 0.008, z); ring.name = 'Hob zone'; groups.units.add(ring);
 }
 // hood
-box(groups.units, 'Hood', 0.71, 1.31, 1.55, 1.68, 0, 0.50, mat(0xb8bcc0, { metalness: 0.6, roughness: 0.35 }));
-box(groups.units, 'Hood chimney', 0.88, 1.14, 1.68, 1.95, 0, 0.26, mat(0xb8bcc0, { metalness: 0.6, roughness: 0.35 }));
 // round sink + tap
 const sink = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.18, 0.012, 48), chrome);
 sink.position.set(2.02, UH + TOP + 0.002, 0.79); sink.name = 'Sink'; groups.units.add(sink);
@@ -388,7 +386,7 @@ box(groups.units, 'Fridge handle', 1.68 - 0.045, 1.68 - 0.018, 0.95, 1.55, FZ + 
 const UB = 1.45, UD = 0.35;          // bottom edge, depth
 const UFRONT = mat(0xf4f1ea, { roughness: 0.45 });
 const ULED = new THREE.MeshBasicMaterial({ color: 0xfff1d6 });
-function upper(name, x0, x1, y0, z0, z1, face, split = true) {
+function upper(name, x0, x1, y0, z0, z1, face, split = true, led = true) {
   box(groups.uppers, name, x0, x1, y0, H, z0, z1, carcass);
   const g = 0.003, t = 0.018;
   // doors: a tall lower door and a short top door, like floor-to-ceiling units
@@ -403,15 +401,24 @@ function upper(name, x0, x1, y0, z0, z1, face, split = true) {
     }
   }
   // LED strip under the cabinet
-  if (y0 < 1.6) {
-    const led = face === 'z+' ? box(groups.uppers, name + ' LED', x0 + 0.02, x1 - 0.02, y0 - 0.004, y0, z1 - 0.05, z1 - 0.03, ULED)
+  if (led && y0 < 1.6) {
+    const strip = face === 'z+' ? box(groups.uppers, name + ' LED', x0 + 0.02, x1 - 0.02, y0 - 0.004, y0, z1 - 0.05, z1 - 0.03, ULED)
                               : box(groups.uppers, name + ' LED', x0 + 0.03, x0 + 0.05, y0 - 0.004, y0, z0 + 0.02, z1 - 0.02, ULED);
-    led.castShadow = false;
+    strip.castShadow = false;
   }
 }
 // back wall: left of the hood, above the hood, right of the hood
 upper('Wall cabinet back-left', 0, 0.71, UB, 0, UD, 'z+');
-upper('Wall cabinet above hood', 0.71, 1.31, 1.95, 0, UD, 'z+', false);
+// built-in (integrated) cooker hood: hidden in the cabinet above the hob, only the pull-out visor shows.
+// Its bottom sits 65 cm above the hob, so this one cabinet starts a little higher than its neighbours.
+const HOOD_Y = 1.55, steel = mat(0xb8bcc0, { metalness: 0.7, roughness: 0.3 });
+upper('Wall cabinet with built-in hood', 0.71, 1.31, HOOD_Y + 0.06, 0, UD, 'z+', true, false);
+box(groups.uppers, 'Built-in hood body', 0.72, 1.30, HOOD_Y, HOOD_Y + 0.06, 0, UD - 0.02, carcass);
+box(groups.uppers, 'Built-in hood visor (pull-out)', 0.72, 1.30, HOOD_Y, HOOD_Y + 0.06, UD - 0.02, UD + 0.03, steel);
+box(groups.uppers, 'Built-in hood grease filter', 0.74, 1.28, HOOD_Y - 0.003, HOOD_Y, 0.03, UD - 0.03, mat(0x55595d, { metalness: 0.6, roughness: 0.5 }));
+for (const x of [0.86, 1.16]) {
+  const l = box(groups.uppers, 'Hood light', x - 0.03, x + 0.03, HOOD_Y - 0.005, HOOD_Y - 0.003, UD - 0.08, UD - 0.05, ULED); l.castShadow = false;
+}
 upper('Wall cabinet back-right', 1.31, W - UD, UB, 0, UD, 'z+');
 // exterior wall, corner up to the tall fridge housing
 upper('Wall cabinet right 1', W - UD, W, UB, 0, 0.55, 'x-');
