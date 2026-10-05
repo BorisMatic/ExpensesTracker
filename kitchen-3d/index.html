@@ -102,19 +102,22 @@
       <label><input type="checkbox" id="t-units" checked> Base units, hob, sink, dishwasher, fridge</label>
       <label><input type="checkbox" id="t-uppers" checked> Wall cabinets to ceiling</label>
       <label><input type="checkbox" id="t-shelves" checked> Shelves on left wall</label>
-      <label><input type="checkbox" id="t-inst" checked> Pipes, outlets, cable (from photo)</label>
+      <label><input type="checkbox" id="t-inst"> Pipes, outlets, cable (from photo)</label>
       <label><input type="checkbox" id="t-dims" checked> Dimensions</label>
+      <label><input type="checkbox" id="t-site"> Site state (bare walls, as in photo)</label>
       <label><input type="checkbox" id="t-ceiling"> Ceiling</label>
       <label><input type="checkbox" id="t-plan"> 2D plan sheet</label>
     </div>
   </section>
 
   <section class="legend" aria-label="Legend">
-    <span class="sw" style="background:#e3d6bf"></span><span>Floor tile 120 × 60, travertine look</span>
-    <span class="sw" style="background:#a9aaa6"></span><span>Adhesive / waterproofing band, ≈ 105 cm</span>
-    <span class="sw" style="background:#cfd2cf"></span><span>Exterior wall 20 cm</span>
-    <span class="sw" style="background:#c79a6b"></span><span>Base units 90 cm, wall cabinets 145 cm to ceiling, tall fridge housing</span>
-    <span class="sw" style="background:#c9955e"></span><span>Oak shelves on left wall</span>
+    <span class="sw" style="background:#e6dccb"></span><span>Floor tile 120 × 60, travertine look</span>
+    <span class="sw" style="background:#54504c"></span><span>Base units and tall fridge unit, matte anthracite, handleless</span>
+    <span class="sw" style="background:#f7f6f3"></span><span>Wall cabinets to ceiling, matte white</span>
+    <span class="sw" style="background:#4d4741"></span><span>Worktop, dark stone</span>
+    <span class="sw" style="background:#b8afa5"></span><span>Backsplash, grey marble</span>
+    <span class="sw" style="background:#d3cfc9"></span><span>Left wall, light microcement</span>
+    <span class="sw" style="background:#5b4030"></span><span>Walnut shelves on black rails</span>
   </section>
 
   <div class="row">
@@ -136,6 +139,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 
 // ---------- Dimensions (metres). Origin = inner back-left floor corner; +x right, +z toward the open front, +y up.
 const W = 2.28, D = 2.35, H = 2.60;
@@ -193,7 +197,7 @@ let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 214748364
 // Floor: 120 × 60 cm tiles laid with the long side across the room, slight stagger per row (as in the photo)
 const PX = 4; // px per cm
 const floorTex = canvasTex(Math.round(W * 100 * PX), Math.round(D * 100 * PX), (g, w, h) => {
-  g.fillStyle = '#e3d6bf'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#e6dccb'; g.fillRect(0, 0, w, h);
   for (let i = 0; i < 900; i++) { // travertine veining
     const y = rnd() * h, x = rnd() * w, len = 40 + rnd() * 260;
     g.strokeStyle = `rgba(${150 + rnd() * 40},${125 + rnd() * 30},${90 + rnd() * 30},${0.03 + rnd() * 0.05})`;
@@ -202,7 +206,7 @@ const floorTex = canvasTex(Math.round(W * 100 * PX), Math.round(D * 100 * PX), (
     g.bezierCurveTo(x + len * 0.3, y + (rnd() - 0.5) * 8, x + len * 0.7, y + (rnd() - 0.5) * 8, x + len, y + (rnd() - 0.5) * 6);
     g.stroke();
   }
-  g.strokeStyle = '#7d7466'; g.lineWidth = 2;
+  g.strokeStyle = '#b9ad98'; g.lineWidth = 2;
   const rowH = 60 * PX;
   for (let r = 0; r * rowH < h; r++) {
     const y = r * rowH;
@@ -226,6 +230,54 @@ function wallTex(lenM) {
       const x = rnd() * w, y = bandTop + 10 + rnd() * (h - bandTop - 10);
       g.fillStyle = `rgba(${rnd() > 0.5 ? '200,200,196' : '120,121,118'},${0.15 + rnd() * 0.25})`;
       g.fillRect(x, y, 4 + rnd() * 30, 3 + rnd() * 25);
+    }
+  });
+}
+
+// Finished look, matched to the design render
+// Painted wall: warm white with a faint roller texture
+function paintTex(lenM) {
+  return canvasTex(Math.round(lenM * 100), Math.round(H * 100), (g, w, h) => {
+    g.fillStyle = '#efede9'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < w * h * 0.02; i++) { g.fillStyle = `rgba(0,0,0,${rnd() * 0.025})`; g.fillRect(rnd() * w, rnd() * h, 2, 2); }
+  });
+}
+// Light microcement / concrete for the left wall
+function concreteTex(lenM) {
+  return canvasTex(Math.round(lenM * 200), Math.round(H * 200), (g, w, h) => {
+    g.fillStyle = '#d3cfc9'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 1400; i++) {
+      const r = 10 + rnd() * 80, x = rnd() * w, y = rnd() * h;
+      const grd = g.createRadialGradient(x, y, 0, x, y, r);
+      const c = rnd() > 0.5 ? '255,255,255' : '120,112,104';
+      grd.addColorStop(0, `rgba(${c},${0.04 + rnd() * 0.07})`); grd.addColorStop(1, `rgba(${c},0)`);
+      g.fillStyle = grd; g.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    for (let i = 0; i < w * h * 0.004; i++) { g.fillStyle = `rgba(90,85,80,${rnd() * 0.25})`; g.fillRect(rnd() * w, rnd() * h, 1.5, 1.5); }
+  });
+}
+// Marble: soft cloudy base with branching veins
+function marbleTex(wM, hM, base, clouds, veins, scale = 300) {
+  return canvasTex(Math.round(wM * scale), Math.round(hM * scale), (g, w, h) => {
+    g.fillStyle = base; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < (w * h) / 900; i++) {
+      const r = 20 + rnd() * 120, x = rnd() * w, y = rnd() * h;
+      const c = clouds[Math.floor(rnd() * clouds.length)];
+      const grd = g.createRadialGradient(x, y, 0, x, y, r);
+      grd.addColorStop(0, `rgba(${c},${0.06 + rnd() * 0.1})`); grd.addColorStop(1, `rgba(${c},0)`);
+      g.fillStyle = grd; g.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    const vein = (x, y, ang, len, wdt, depth) => {
+      g.lineWidth = wdt; g.beginPath(); g.moveTo(x, y);
+      for (let k = 0; k < len; k += 6) {
+        ang += (rnd() - 0.5) * 0.5; x += Math.cos(ang) * 6; y += Math.sin(ang) * 6; g.lineTo(x, y);
+        if (depth < 3 && rnd() < 0.015) { g.stroke(); vein(x, y, ang + (rnd() - 0.5) * 1.6, len * 0.5, wdt * 0.6, depth + 1); g.beginPath(); g.moveTo(x, y); }
+      }
+      g.stroke();
+    };
+    for (let i = 0; i < (w * h) / 40000 + 4; i++) {
+      g.strokeStyle = `rgba(${veins},${0.35 + rnd() * 0.4})`;
+      vein(rnd() * w, rnd() * h, rnd() * Math.PI * 2, 200 + rnd() * 600, 0.8 + rnd() * 1.6, 0);
     }
   });
 }
@@ -263,9 +315,10 @@ box(groups.shell, 'Skirting left', 0, 0.008, 0, 0.07, 0, D, skirtMat);
 box(groups.shell, 'Skirting right', W - 0.008, W, 0, 0.07, 0, D, skirtMat);
 
 // ---------- Walls (inner faces textured, other faces plain)
-function wall(name, x0, x1, z0, z1, innerFace, lenM, baseMat) {
-  const tex = wallTex(lenM);
-  const inner = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95 });
+const wallFinishes = [];
+function wall(name, x0, x1, z0, z1, innerFace, lenM, baseMat, finishTex) {
+  const inner = new THREE.MeshStandardMaterial({ map: finishTex, roughness: 0.95 });
+  wallFinishes.push({ mat: inner, site: wallTex(lenM), finished: finishTex });
   // BoxGeometry face order: +x, -x, +y, -y, +z, -z
   const mats = [baseMat, baseMat, cut, baseMat, baseMat, baseMat];
   mats[innerFace] = inner;
@@ -276,9 +329,9 @@ function wall(name, x0, x1, z0, z1, innerFace, lenM, baseMat) {
   groups.shell.add(m);
   return m;
 }
-wall('Back wall 12 cm', -T_LEFT, W + T_EXT, -T_BACK, 0, 4, W + T_LEFT + T_EXT, plain);
-wall('Left wall 12 cm', -T_LEFT, 0, 0, D, 0, D, plain);
-wall('Exterior wall 20 cm', W, W + T_EXT, 0, D, 1, D, extWall);
+wall('Back wall 12 cm', -T_LEFT, W + T_EXT, -T_BACK, 0, 4, W + T_LEFT + T_EXT, plain, paintTex(W + T_LEFT + T_EXT));
+wall('Left wall 12 cm', -T_LEFT, 0, 0, D, 0, D, plain, concreteTex(D));
+wall('Exterior wall 20 cm', W, W + T_EXT, 0, D, 1, D, extWall, paintTex(D));
 
 // Ceiling
 const ceil = new THREE.Mesh(new THREE.PlaneGeometry(W + T_LEFT + T_EXT, D + T_BACK), mat(0xfafaf8, { side: THREE.DoubleSide }));
@@ -327,21 +380,27 @@ const lc = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
 lc.name = 'Left wall cable'; groups.inst.add(lc);
 
 // ---------- Planned units from the drawing (base units 90 cm, worktop 3 cm)
-const carcass = mat(0xc79a6b, { transparent: true, opacity: 0.92, roughness: 0.6 });
-const front = mat(0xf4f1ea, { roughness: 0.5 });
-const top = mat(0x6b6660, { roughness: 0.4 });
+const carcass = mat(0x4a4744, { roughness: 0.75 });
+const front = mat(0x54504c, { roughness: 0.7 });
+const stoneTex = marbleTex(1, 1, '#4d4741', ['30,26,22', '120,108,96', '90,80,70'], '170,160,148', 400);
+stoneTex.repeat.set(1.5, 1.5);
+const top = new THREE.MeshStandardMaterial({ map: stoneTex, roughness: 0.3, metalness: 0.05 });
 const UH = 0.87, TOP = 0.03;
 const FZ = 1.66, FRIDGE_TOP = 2.05; // fridge housing starts at z = 1.66 (69 cm wide), fridge door up to 205 cm
-const plinth = mat(0x3a3a3a);
+const plinth = mat(0x3d3a37);
 function unit(name, x0, x1, z0, z1, frontFace) {
   box(groups.units, name, x0, x1, 0.10, UH, z0, z1, carcass);
   const r = 0.05; // plinth recess on the door side
   box(groups.units, name + ' plinth', x0 + (frontFace === 'x-' ? r : 0), x1 - (frontFace === 'x+' ? r : 0), 0, 0.10, z0, z1 - (frontFace === 'z+' ? r : 0), plinth);
   // door panel
-  const g = 0.003;
-  if (frontFace === 'x+') box(groups.units, name + ' door', x1, x1 + 0.018, 0.12, UH - 0.02, z0 + g, z1 - g, front);
-  if (frontFace === 'x-') box(groups.units, name + ' door', x0 - 0.018, x0, 0.12, UH - 0.02, z0 + g, z1 - g, front);
-  if (frontFace === 'z+') box(groups.units, name + ' door', x0 + g, x1 - g, 0.12, UH - 0.02, z1, z1 + 0.018, front);
+  const g = 0.003, ft = UH - 0.04; // 4 cm grip channel under the worktop (handleless)
+  if (frontFace === 'x+') box(groups.units, name + ' door', x1, x1 + 0.018, 0.12, ft, z0 + g, z1 - g, front);
+  if (frontFace === 'x-') box(groups.units, name + ' door', x0 - 0.018, x0, 0.12, ft, z0 + g, z1 - g, front);
+  if (frontFace === 'z+') { // two deep drawers
+    const mid = (0.12 + ft) / 2;
+    box(groups.units, name + ' drawer', x0 + g, x1 - g, 0.12, mid - 0.02, z1, z1 + 0.018, front);
+    box(groups.units, name + ' drawer', x0 + g, x1 - g, mid + 0.02, ft, z1, z1 + 0.018, front);
+  }
 }
 // left run, 50 cm deep from the wall (the drawing has 62)
 const LD = 0.50;
@@ -372,23 +431,22 @@ bowl.position.set(2.02, UH + TOP + 0.010, 0.79); groups.units.add(bowl);
 const tap = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
   new THREE.Vector3(2.24, UH + TOP, 0.79), new THREE.Vector3(2.24, UH + 0.30, 0.79), new THREE.Vector3(2.18, UH + 0.36, 0.79), new THREE.Vector3(2.12, UH + 0.28, 0.79)]), 24, 0.012, 12), chrome);
 tap.name = 'Tap'; groups.units.add(tap);
-// integrated dishwasher: cabinet panel with a bar handle across the top
-box(groups.units, 'Dishwasher handle', 1.68 - 0.045, 1.68 - 0.018, UH - 0.08, UH - 0.065, 1.16, 1.56, chrome);
+// integrated dishwasher behind a handleless cabinet panel
 
 // tall built-in fridge housing, floor to ceiling, one fridge door + a small top door
 box(groups.units, 'Fridge housing', 1.68, W, 0.10, H, FZ, D, carcass);
 box(groups.units, 'Fridge housing plinth', 1.68 + 0.05, W, 0, 0.10, FZ, D, plinth);
 box(groups.units, 'Fridge door (integrated)', 1.68 - 0.018, 1.68, 0.12, FRIDGE_TOP - 0.003, FZ + 0.003, D - 0.003, front);
 box(groups.units, 'Fridge top cabinet door', 1.68 - 0.018, 1.68, FRIDGE_TOP + 0.003, H - 0.003, FZ + 0.003, D - 0.003, front);
-box(groups.units, 'Fridge handle', 1.68 - 0.045, 1.68 - 0.018, 0.95, 1.55, FZ + 0.05, FZ + 0.065, chrome);
 
 
 // ---------- Wall cabinets up to the ceiling: back wall and exterior (right) wall only
 const UB = 1.45, UD = 0.35;          // bottom edge, depth
-const UFRONT = mat(0xf4f1ea, { roughness: 0.45 });
+const UFRONT = mat(0xf7f6f3, { roughness: 0.6 });
+const UBODY = mat(0xf2f1ee, { roughness: 0.6 });
 const ULED = new THREE.MeshBasicMaterial({ color: 0xfff1d6 });
 function upper(name, x0, x1, y0, z0, z1, face, split = true, led = true) {
-  box(groups.uppers, name, x0, x1, y0, H, z0, z1, carcass);
+  box(groups.uppers, name, x0, x1, y0, H, z0, z1, UBODY);
   const g = 0.003, t = 0.018;
   // doors: a tall lower door and a short top door, like floor-to-ceiling units
   const rows = split && H - y0 > 0.8 ? [[y0, H - 0.40], [H - 0.40, H]] : [[y0, H]];
@@ -414,8 +472,8 @@ upper('Wall cabinet back-left', 0, 0.71, UB, 0, UD, 'z+');
 // Its bottom sits 65 cm above the hob, so this one cabinet starts a little higher than its neighbours.
 const HOOD_Y = 1.55, steel = mat(0xb8bcc0, { metalness: 0.7, roughness: 0.3 });
 upper('Wall cabinet with built-in hood', 0.71, 1.31, HOOD_Y + 0.06, 0, UD, 'z+', true, false);
-box(groups.uppers, 'Built-in hood body', 0.72, 1.30, HOOD_Y, HOOD_Y + 0.06, 0, UD - 0.02, carcass);
-box(groups.uppers, 'Built-in hood visor (pull-out)', 0.72, 1.30, HOOD_Y, HOOD_Y + 0.06, UD - 0.02, UD + 0.03, steel);
+box(groups.uppers, 'Built-in hood body', 0.72, 1.30, HOOD_Y, HOOD_Y + 0.06, 0, UD - 0.02, UBODY);
+box(groups.uppers, 'Built-in hood visor (pull-out)', 0.72, 1.30, HOOD_Y, HOOD_Y + 0.06, UD - 0.02, UD + 0.03, UFRONT);
 box(groups.uppers, 'Built-in hood grease filter', 0.74, 1.28, HOOD_Y - 0.003, HOOD_Y, 0.03, UD - 0.03, mat(0x55595d, { metalness: 0.6, roughness: 0.5 }));
 for (const x of [0.86, 1.16]) {
   const l = box(groups.uppers, 'Hood light', x - 0.03, x + 0.03, HOOD_Y - 0.005, HOOD_Y - 0.003, UD - 0.08, UD - 0.05, ULED); l.castShadow = false;
@@ -425,12 +483,32 @@ upper('Wall cabinet back-right', 1.31, W - UD, UB, 0, UD, 'z+');
 upper('Wall cabinet right 1', W - UD, W, UB, 0, 0.55, 'x-');
 upper('Wall cabinet right 2', W - UD, W, UB, 0.55, 1.10, 'x-');
 upper('Wall cabinet right 3', W - UD, W, UB, 1.10, FZ, 'x-');
+// under-cabinet LED light (warm), aimed down at the worktop and backsplash
+RectAreaLightUniformsLib.init();
+for (const [x, z, w, d] of [[(W - UD) / 2, UD - 0.06, W - UD - 0.04, 0.04], [W - UD + 0.06, FZ / 2, 0.04, FZ - 0.04]]) {
+  const l = new THREE.RectAreaLight(0xffd9a8, 22, Math.max(w, d), Math.min(w, d));
+  l.position.set(x, UB - 0.01, z); l.lookAt(x, 0, z);
+  if (d > w) l.rotateZ(Math.PI / 2);
+  l.name = 'Under-cabinet LED'; groups.uppers.add(l);
+}
+// marble backsplash between worktop and wall cabinets (back wall and exterior wall)
+const bsH = UB - (UH + TOP);
+const splash = (lenM) => new THREE.MeshStandardMaterial({ map: marbleTex(lenM, bsH, '#b8afa5', ['255,250,240', '120,105,92', '160,140,120'], '245,240,232'), roughness: 0.25 });
+const bsBack = new THREE.Mesh(new THREE.PlaneGeometry(W, bsH), splash(W));
+bsBack.position.set(W / 2, UH + TOP + bsH / 2, 0.006); bsBack.name = 'Backsplash back'; bsBack.receiveShadow = true; groups.units.add(bsBack);
+const bsRight = new THREE.Mesh(new THREE.PlaneGeometry(FZ, bsH), splash(FZ));
+bsRight.rotation.y = -Math.PI / 2; bsRight.position.set(W - 0.006, UH + TOP + bsH / 2, FZ / 2); bsRight.name = 'Backsplash right'; bsRight.receiveShadow = true; groups.units.add(bsRight);
 
 // ---------- Left wall: three floating oak shelves with a few things on them
-const oak = mat(0xc9955e, { roughness: 0.55 });
+const oak = mat(0x5b4030, { roughness: 0.6 });
+const blackMetal = mat(0x1c1c1c, { roughness: 0.5, metalness: 0.4 });
 const SH = { z0: 0.75, z1: 1.65, depth: 0.22, t: 0.035 };
 const shelfY = [1.35, 1.70, 2.05];
-for (const y of shelfY) box(groups.shelves, 'Oak shelf', 0, SH.depth, y, y + SH.t, SH.z0, SH.z1, oak);
+for (const y of shelfY) {
+  box(groups.shelves, 'Walnut shelf', 0, SH.depth, y, y + SH.t, SH.z0, SH.z1, oak);
+  for (const z of [SH.z0 + 0.06, SH.z1 - 0.06]) box(groups.shelves, 'Shelf bracket', 0, SH.depth - 0.02, y - 0.012, y, z - 0.008, z + 0.008, blackMetal);
+}
+for (const z of [SH.z0 + 0.06, SH.z1 - 0.06]) box(groups.shelves, 'Wall rail', 0, 0.02, shelfY[0] - 0.08, shelfY[2] + 0.30, z - 0.012, z + 0.012, blackMetal);
 const pot = mat(0xd77a5c, { roughness: 0.7 }), leaf = mat(0x5f8f4e, { roughness: 0.8 }), glass = mat(0xdfeee8, { transparent: true, opacity: 0.55, roughness: 0.1 });
 const ceramic = [mat(0xe8e1d4), mat(0x8fa7b3), mat(0xe6c36a)];
 function on(group, geo, m, x, y, z, name) { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; o.name = name; group.add(o); return o; }
@@ -512,6 +590,10 @@ bind('t-shelves', on => groups.shelves.visible = on);
 bind('t-inst', on => groups.inst.visible = on);
 bind('t-dims', on => { groups.dims.visible = on; groups.dims.traverse(o => { if (o.isCSS2DObject) o.element.style.display = on ? '' : 'none'; }); });
 bind('t-ceiling', on => groups.ceiling.visible = on);
+bind('t-site', on => {
+  for (const f of wallFinishes) { f.mat.map = on ? f.site : f.finished; f.mat.needsUpdate = true; }
+  for (const n of ['Backsplash back', 'Backsplash right']) groups.units.getObjectByName(n).visible = !on;
+});
 bind('t-plan', on => document.getElementById('sheet').hidden = !on);
 
 const panel = document.getElementById('panel'), collapse = document.getElementById('collapse');
