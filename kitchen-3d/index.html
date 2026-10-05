@@ -99,7 +99,7 @@
   <section>
     <p class="eyebrow">Layers</p>
     <div class="toggles">
-      <label><input type="checkbox" id="t-units" checked> Base units, hob, sink</label>
+      <label><input type="checkbox" id="t-units" checked> Base units, hob, sink, dishwasher, fridge</label>
       <label><input type="checkbox" id="t-uppers" checked> Wall cabinets to ceiling</label>
       <label><input type="checkbox" id="t-shelves" checked> Shelves on left wall</label>
       <label><input type="checkbox" id="t-inst" checked> Pipes, outlets, cable (from photo)</label>
@@ -113,7 +113,7 @@
     <span class="sw" style="background:#e3d6bf"></span><span>Floor tile 120 × 60, travertine look</span>
     <span class="sw" style="background:#a9aaa6"></span><span>Adhesive / waterproofing band, ≈ 105 cm</span>
     <span class="sw" style="background:#cfd2cf"></span><span>Exterior wall 20 cm</span>
-    <span class="sw" style="background:#c79a6b"></span><span>Base units 90 cm, wall cabinets 145 cm to ceiling</span>
+    <span class="sw" style="background:#c79a6b"></span><span>Base units 90 cm, wall cabinets 145 cm to ceiling, tall fridge housing</span>
     <span class="sw" style="background:#c9955e"></span><span>Oak shelves on left wall</span>
   </section>
 
@@ -331,6 +331,7 @@ const carcass = mat(0xc79a6b, { transparent: true, opacity: 0.92, roughness: 0.6
 const front = mat(0xf4f1ea, { roughness: 0.5 });
 const top = mat(0x6b6660, { roughness: 0.4 });
 const UH = 0.87, TOP = 0.03;
+const FZ = 1.66, FRIDGE_TOP = 2.05; // fridge housing starts at z = 1.66 (69 cm wide), fridge door up to 205 cm
 const plinth = mat(0x3a3a3a);
 function unit(name, x0, x1, z0, z1, frontFace) {
   box(groups.units, name, x0, x1, 0.10, UH, z0, z1, carcass);
@@ -350,12 +351,11 @@ unit('Left unit 3', 0, 0.62, 1.74, 2.35, 'x+');
 unit('Hob unit', 0.62, 1.68, 0, 0.60, 'z+');
 // right run (60 deep)
 unit('Sink unit', 1.68, W, 0, 1.06, 'x-');
-unit('Washer / dishwasher', 1.68, W, 1.06, 1.66, 'x-');
-unit('Right unit 3', 1.68, W, 1.66, 2.35, 'x-');
+unit('Dishwasher (integrated)', 1.68, W, 1.06, 1.66, 'x-');
 // worktops
 box(groups.units, 'Worktop left', 0, 0.64, UH, UH + TOP, 0, D, top);
 box(groups.units, 'Worktop back', 0.64, 1.66, UH, UH + TOP, 0, 0.62, top);
-box(groups.units, 'Worktop right', 1.66, W, UH, UH + TOP, 0, D, top);
+box(groups.units, 'Worktop right', 1.66, W, UH, UH + TOP, 0, FZ, top);
 // hob (glass with 4 zones)
 const hob = box(groups.units, 'Hob', 0.70, 1.32, UH + TOP, UH + TOP + 0.006, 0.03, 0.55, mat(0x111111, { roughness: 0.15 }));
 for (const [x, z, r] of [[0.84, 0.17, 0.08], [1.17, 0.17, 0.065], [0.84, 0.41, 0.065], [1.17, 0.41, 0.09]]) {
@@ -373,9 +373,15 @@ bowl.position.set(2.02, UH + TOP + 0.010, 0.79); groups.units.add(bowl);
 const tap = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
   new THREE.Vector3(2.24, UH + TOP, 0.79), new THREE.Vector3(2.24, UH + 0.30, 0.79), new THREE.Vector3(2.18, UH + 0.36, 0.79), new THREE.Vector3(2.12, UH + 0.28, 0.79)]), 24, 0.012, 12), chrome);
 tap.name = 'Tap'; groups.units.add(tap);
-// washer door
-const door = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.02, 40), mat(0x3c4650, { metalness: 0.3, roughness: 0.2, transparent: true, opacity: 0.85 }));
-door.rotation.z = Math.PI / 2; door.position.set(1.66 - 0.012, 0.48, 1.36); door.name = 'Washer door'; groups.units.add(door);
+// integrated dishwasher: cabinet panel with a bar handle across the top
+box(groups.units, 'Dishwasher handle', 1.68 - 0.045, 1.68 - 0.018, UH - 0.08, UH - 0.065, 1.16, 1.56, chrome);
+
+// tall built-in fridge housing, floor to ceiling, one fridge door + a small top door
+box(groups.units, 'Fridge housing', 1.68, W, 0.10, H, FZ, D, carcass);
+box(groups.units, 'Fridge housing plinth', 1.68 + 0.05, W, 0, 0.10, FZ, D, plinth);
+box(groups.units, 'Fridge door (integrated)', 1.68 - 0.018, 1.68, 0.12, FRIDGE_TOP - 0.003, FZ + 0.003, D - 0.003, front);
+box(groups.units, 'Fridge top cabinet door', 1.68 - 0.018, 1.68, FRIDGE_TOP + 0.003, H - 0.003, FZ + 0.003, D - 0.003, front);
+box(groups.units, 'Fridge handle', 1.68 - 0.045, 1.68 - 0.018, 0.95, 1.55, FZ + 0.05, FZ + 0.065, chrome);
 
 
 // ---------- Wall cabinets up to the ceiling: back wall and exterior (right) wall only
@@ -407,11 +413,10 @@ function upper(name, x0, x1, y0, z0, z1, face, split = true) {
 upper('Wall cabinet back-left', 0, 0.71, UB, 0, UD, 'z+');
 upper('Wall cabinet above hood', 0.71, 1.31, 1.95, 0, UD, 'z+', false);
 upper('Wall cabinet back-right', 1.31, W - UD, UB, 0, UD, 'z+');
-// exterior wall, corner to the open front
-upper('Wall cabinet right 1', W - UD, W, UB, 0, 0.60, 'x-');
-upper('Wall cabinet right 2', W - UD, W, UB, 0.60, 1.20, 'x-');
-upper('Wall cabinet right 3', W - UD, W, UB, 1.20, 1.80, 'x-');
-upper('Wall cabinet right 4', W - UD, W, UB, 1.80, D, 'x-');
+// exterior wall, corner up to the tall fridge housing
+upper('Wall cabinet right 1', W - UD, W, UB, 0, 0.55, 'x-');
+upper('Wall cabinet right 2', W - UD, W, UB, 0.55, 1.10, 'x-');
+upper('Wall cabinet right 3', W - UD, W, UB, 1.10, FZ, 'x-');
 
 // ---------- Left wall: three floating oak shelves with a few things on them
 const oak = mat(0xc9955e, { roughness: 0.55 });

@@ -61,10 +61,10 @@
     <line x1="182" y1="136" x2="209" y2="136"/><line x1="202" y1="127" x2="202" y2="145"/>
     <rect x="164" y="118" width="4" height="40"/>
   </g>
-  <!-- radiator on exterior wall -->
-  <g stroke="#222" stroke-width="0.5">
-    <rect x="222" y="170" width="6" height="62" fill="#fff"/>
-    <path d="M222 174h6M222 178h6M222 182h6M222 186h6M222 190h6M222 194h6M222 198h6M222 202h6M222 206h6M222 210h6M222 214h6M222 218h6M222 222h6M222 226h6"/>
+  <!-- tall integrated fridge, floor to ceiling -->
+  <g fill="none" stroke="#222" stroke-width="0.7">
+    <line x1="168" y1="166" x2="228" y2="235"/><line x1="228" y1="166" x2="168" y2="235"/>
+    <rect x="165" y="168" width="3" height="65" fill="#fff"/>
   </g>
   <!-- free floor zone (dashed in drawing) -->
   <rect x="66" y="60" width="78" height="175" fill="none" stroke="#777" stroke-width="0.6" stroke-dasharray="1.5 1.5"/>
@@ -74,8 +74,8 @@
     <rect x="0" y="0" width="71" height="35"/>
     <rect x="71" y="0" width="60" height="35"/>
     <rect x="131" y="0" width="62" height="35"/>
-    <rect x="193" y="0" width="35" height="235"/>
-    <line x1="193" y1="60" x2="228" y2="60"/><line x1="193" y1="120" x2="228" y2="120"/><line x1="193" y1="180" x2="228" y2="180"/>
+    <rect x="193" y="0" width="35" height="166"/>
+    <line x1="193" y1="55" x2="228" y2="55"/><line x1="193" y1="110" x2="228" y2="110"/>
   </g>
   <!-- Oak shelves on left wall, 22 deep -->
   <rect x="0" y="75" width="22" height="90" fill="#c9955e" fill-opacity="0.35" stroke="#8a5a2b" stroke-width="0.7"/>
@@ -89,8 +89,8 @@
     <text x="31" y="207">BASE</text>
     <text x="101" y="66" font-size="5">HOB + HOOD</text>
     <text x="198" y="108" font-size="5">SINK</text>
-    <text x="196" y="163" font-size="5">WM / DW</text>
-    <text x="194" y="203">BASE</text>
+    <text x="196" y="163" font-size="5">DISHWASHER</text>
+    <text x="198" y="203" font-size="5.5">FRIDGE</text><text x="198" y="210" font-size="4">TALL, BUILT-IN</text>
   </g>
 
   <!-- Dimensions -->
